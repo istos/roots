@@ -1,0 +1,117 @@
+<?php
+
+/**
+ * @file Roots Module
+ */
+
+/**
+ * Borrowed from Ctools.  Thanks Earl.
+ *
+ * Include .inc files as necessary.
+ *
+ * This fuction is helpful for including .inc files for your module. The
+ * general case is including roots funcitonality like this:
+ *
+ * @code
+ * roots_include('taxonomy');
+ * @endcode
+ *
+ * Similar funcitonality can be used for other modules by providing the $module
+ * and $dir arguments like this:
+ *
+ * @code
+ * // include mymodule/includes/import.inc
+ * roots_include('import', 'mymodule');
+ * // include mymodule/plugins/foobar.inc
+ * rootss_include('foobar', 'mymodule', 'plugins');
+ * @endcode
+ *
+ * @param $file
+ *   The base file name to be included.
+ * @param $module
+ *   Optional module containing the include.
+ * @param $dir
+ *   Optional subdirectory containing the include file.
+ */
+function roots_include($file, $module = 'roots', $dir = 'includes') {
+  static $used = array();
+  if (!isset($used[$module][$dir][$file])) {
+    if ($module === 'roots') {
+      // If we are including the a roots file then do not use drupal_get_path to
+      // skip a db call.
+      require_once ( dirname(__FILE__) . "/$dir/$file.inc");
+    } else {
+      require_once './' . drupal_get_path('module', $module) . "/$dir/$file.inc";
+    }
+  }
+
+  $used[$file] = TRUE;
+}
+
+
+/**
+ * Central static variable storage. Modeled after Drupal 7's drupal_static().
+ *
+ * @See http://api.drupal.org/api/function/drupal_static/7 for examples
+ *
+ * @param $name
+ *   Globally unique name for the variable. For a function with only one static,
+ *   variable, the function name (e.g. via the PHP magic __FUNCTION__ constant)
+ *   is recommended. For a function with multiple static variables add a
+ *   distinguishing suffix to the function name for each one.
+ * @param $default_value
+ *   Optional default value.
+ * @return $reset
+ *   TRUE to reset a specific named variable, or all variables if $name is NULL.
+ *   Resetting every variable should only be used, for example, for running unit
+ *   tests with a clean environment. Should be used only though via function
+ *   ctools_static_reset().
+ */
+
+function &roots_static($name, $default_value = NULL, $reset = FALSE) {
+  static $data = array(), $default = array();
+  if (!isset($name)) {
+    // All variables are reset. This needs to be done one at a time so that
+    // references returned by earlier invocations of drupal_static() also get
+    // reset.
+    foreach ($default as $name => $value) {
+      $data[$name] = $value;
+    }
+    // As the function returns a reference, the return should always be a
+    // variable.
+    return $data;
+  }
+  if ($reset) {
+    // The reset means the default is loaded.
+    if (array_key_exists($name, $default)) {
+      $data[$name] = $default[$name];
+    }
+    else {
+      // Reset was called before a default is set and yet a variable must be
+      // returned.
+      return $data;
+    }
+  }
+  elseif (!array_key_exists($name, $data)) {
+    // Store the default value internally and also copy it to the reference to
+    // be returned.
+    $default[$name] = $data[$name] = $default_value;
+  }
+  return $data[$name];
+}
+
+/**
+ * Implementation of hook_theme
+ */
+function roots_theme($existing, $type, $theme, $path) {
+  $theme_inc = $path . '/includes/theme.inc';
+  $hooks = array();
+
+  // theme an html element
+  $hooks['html_element'] = array(
+    'arguments' => array('content' => NULL, 'element' => NULL, 'style' => NULL, 'id' => NULL),
+    'file' => $theme_inc,
+  );
+
+  return $hooks;
+}

@@ -1,0 +1,7 @@
+name = "Roots"
+dependencies[] = "ctools"
+description = "Provide helper functions for Treehouse Agency projects."
+package = "Roots"
+core = "6.x"
+
+project status url = http://fserver.thclient.com/fserver
