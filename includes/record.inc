@@ -11,21 +11,16 @@ abstract class RootsRecord {
 
 
   // Internal variables.
-  protected $_data = array();
-  protected $_valid;
-  protected $_needs_validation = TRUE;
-  protected $_errors = array();
+  protected $data = array();
+  protected $valid;
+  protected $needsValidation = TRUE;
+  protected $errors = array();
 
   // Run the unserialize
-  protected $_should_unserialize = FALSE;
+  protected $shouldUnserialize = FALSE;
 
   // Define the table this record is for
   abstract protected function table();
-
-  // Define any unique fields
-  protected function unique_fields() {
-    return array();
-  }
 
   /**
    * Public method to get the fields
@@ -36,25 +31,9 @@ abstract class RootsRecord {
   }
 
   /**
-   * Get the unique fields
-   */
-  public function getUniqueFields() {
-    $unique_keys = array();
-
-    // Check the schema API
-    $schema = drupal_get_schema($this->getTable());
-    $schema_unique_keys = isset($schema['unique keys']) ? $schema['unique keys'] : array();
-    foreach ($schema_unique_keys as $keys) {
-      $unique_keys = array_merge($unique_keys, $keys);
-    }
-
-    return array_merge($unique_keys, $this->unique_fields());
-  }
-
-  /**
    * Public method to check if a field is serialized
    */
-  public function is_serialized($field) {
+  public function isSerialized($field) {
     $schema = drupal_get_schema($this->getTable());
     return isset($schema['fields'][$field]['serialize']) ? $schema['fields'][$field]['serialize'] : FALSE;
   }
@@ -78,7 +57,7 @@ abstract class RootsRecord {
         $this->load($param);
       }
       elseif (is_array($param)) {
-        $this->load_from_array($param);
+        $this->loadFromArray($param);
       }
     }
   }
@@ -89,9 +68,9 @@ abstract class RootsRecord {
   public function load($id) {
     $row = db_fetch_array(db_query('SELECT * FROM {'. $this->table() .'} WHERE id = %d', $id));
     if (!empty($row)) {
-      $this->_data = $row;
+      $this->data = $row;
     }
-    if ($this->_should_unserialize) {
+    if ($this->shouldUnserialize) {
       $this->unserialize();
     }
   }
@@ -100,9 +79,9 @@ abstract class RootsRecord {
    * Unserialze all serilzed fields
    */
   protected function unserialize() {
-    foreach ($this->_data as $field_name => $field) {
-      if ($this->is_serialized($field_name)) {
-        $this->_data[$field_name] = unserialize($field);
+    foreach ($this->data as $field_name => $field) {
+      if ($this->isSerialized($field_name)) {
+        $this->data[$field_name] = unserialize($field);
       }
     }
   }
@@ -110,11 +89,11 @@ abstract class RootsRecord {
   /**
    * Load the record object with data from an array.
    */
-  public function load_from_array($array) {
+  public function loadFromArray($array) {
     $fields = $this->getFields();
     foreach ($array as $key => $value) {
       if (in_array($key, $fields)) {
-        $this->_data[$key] = $value;
+        $this->data[$key] = $value;
       }
     }
     $this->invalidate();
@@ -123,20 +102,20 @@ abstract class RootsRecord {
   /**
    * Is the record new?
    */
-  public function is_new() {
+  public function isNew() {
     return (empty($this->id));
   }
 
   /**
    * Does the record pass validation?
    */
-  public function is_valid() {
-    if ($this->_needs_validation) {
-      $this->reset_errors();
-      $this->_valid = $this->validate();
-      $this->_needs_validation = FALSE;
+  public function isValid() {
+    if ($this->needsValidation) {
+      $this->resetErrors();
+      $this->valid = $this->validate();
+      $this->needsValidation = FALSE;
     }
-    return $this->_valid;
+    return $this->valid;
   }
 
   /**
@@ -150,66 +129,29 @@ abstract class RootsRecord {
    * Mark the record as needing validation.
    */
   protected function invalidate() {
-    $this->_needs_validation = TRUE;
+    $this->needsValidation = TRUE;
   }
 
   /**
    * Returns the array of validation errors.
    */
-  public function get_errors() {
-    return $this->_errors;
+  public function getErrors() {
+    return $this->errors;
   }
 
   /**
    * Used internally to set a validation error.
    */
-  protected function set_error($error, $field = 'all') {
-    $this->_errors[$field][] = $error;
+  protected function setError($error, $field = 'all') {
+    $this->errors[$field][] = $error;
   }
 
   /**
    * Resets the errors array.
    */
-  protected function reset_errors() {
-    $this->_errors = array();
+  protected function resetErrors() {
+    $this->errors = array();
   }
-
-  /**
-   * Check for uniqueness
-   *
-  protected function checkUniqueFields() {
-    $unique_fields = $this->getUniqueFields();
-    if (empty($unique_fields)) {
-      return TRUE;
-    }
-
-    $fields = $this->getFields();
-
-    $where = array();
-    $where_value = array();
-    foreach ($unique_fields as $field) {
-      if (empty($this->$field)) {
-        $this->_valid = FALSE;
-        $this->_needs_validation = FALSE;
-        return FALSE;
-      }
-
-      if (in_array($fields[$field]['type'], array('int', 'float', 'numeric'))) {
-        $where[] = "$field = %d";
-      }
-      else {
-        $where[] = "$field = '%s'";
-      }
-      $where_value[] = $this->$field;
-      
-    }
-
-    $sql = "SELECT id FROM {" . $this->table() . "} WHERE " . implode(' AND ', $where);
-
-    $model_name = get_class($this);
-    $model = new $model_name();
-    return RootsFind::find_by($sql, $where_value, $model);
-  }*/
 
   /**
    * Save the record to the database.
@@ -217,13 +159,13 @@ abstract class RootsRecord {
   public function save() {
     //$current = $this->checkUniqueFields();
 
-    if (!$this->is_valid()) {
+    if (!$this->isValid()) {
       return FALSE;
     }
 
-    if ($this->is_new()) {
+    if ($this->isNew()) {
       $return = drupal_write_record($this->table(), $this);
-      $this->_data['id'] = db_last_insert_id($this->table(), 'id');
+      $this->data['id'] = db_last_insert_id($this->table(), 'id');
     }
     else {
       $return = drupal_write_record($this->table(), $this, array('id'));
@@ -238,7 +180,7 @@ abstract class RootsRecord {
    */
   public function delete() {
     db_query('DELETE FROM {'. $this->table() .'} WHERE id = %d', $this->id);
-    unset($this->_data['id']);
+    unset($this->data['id']);
   }
 
   /**
@@ -247,7 +189,7 @@ abstract class RootsRecord {
    */
   public function __set($name, $value) {
     if (($name != 'id') && in_array($name, $this->getFields())) {
-      $this->_data[$name] = $value;
+      $this->data[$name] = $value;
       $this->invalidate();
     }
   }
@@ -256,8 +198,8 @@ abstract class RootsRecord {
    * Property overloading for getting the value of a db column.
    */
   public function __get($name) {
-    if (array_key_exists($name, $this->_data)) {
-      return $this->_data[$name];
+    if (array_key_exists($name, $this->data)) {
+      return $this->data[$name];
     }
     return NULL;
   }
@@ -266,7 +208,7 @@ abstract class RootsRecord {
    * Property overloading for testing is a db column field is set.
    */
   public function __isset($name) {
-    return isset($this->_data[$name]);
+    return isset($this->data[$name]);
   }
 
   /**
@@ -274,7 +216,7 @@ abstract class RootsRecord {
    */
   public function __unset($name) {
     if (($name != 'id') && in_array($name, $this->getFields())) {
-      unset($this->_data[$name]);
+      unset($this->data[$name]);
       $this->invalidate();
     }
   }
@@ -309,26 +251,26 @@ class RootsFind {
    * @param  $field
    * @return array of RootsRecord
    */
-  public static function find_by_string($field, $value, RootsRecord &$record) {
+  public static function findByString($field, $value, RootsRecord &$record) {
     if (in_array($field, $record->getFields())) {
       $sql = 'SELECT id FROM {' . $record->getTable() . '} WHERE ' . $field . " = '%s'";
-      return self::find_by($sql, array($value), $record);
+      return self::findBy($sql, array($value), $record);
     }
   }
 
-  public static function find_by_number($field, $value, RootsRecord &$record) {
+  public static function findByNumber($field, $value, RootsRecord &$record) {
     if (in_array($field, $record->getFields())) {
       $sql = 'SELECT id FROM {' . $record->getTable() . '} WHERE ' . $field . ' = %d';
-      return self::find_by($sql, $value, $record);
+      return self::findBy($sql, $value, $record);
     }
   }
 
-  public static function find_all(RootsRecord &$record) {
+  public static function findAll(RootsRecord &$record) {
     $sql = 'SELECT id FROM {' . $record->getTable() . '}';
-    return self::find_by($sql, array(), $record);
+    return self::findBy($sql, array(), $record);
   }
 
-  public static function find_by($sql, $args, RootsRecord &$record) {
+  public static function findBy($sql, $args, RootsRecord &$record) {
     $class = get_class($record);
     $return = array();
     $result = db_query($sql, $args);

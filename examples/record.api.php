@@ -24,7 +24,7 @@
  */
 
 roots_include('record');
-class Widget extends Roots_Record {
+class Widget extends RootsRecord {
   protected function table() {
     return 'widgets';
   }
@@ -36,7 +36,7 @@ class Widget extends Roots_Record {
  * This looks for the serialzed fields in your schema and unserilzes them when the record is loaded.
  */
 roots_include('record');
-class Widget extends Roots_Record {
+class Widget extends RootsRecord {
   protected $_should_unserialize = TRUE;
 
   protected function table() {
@@ -48,7 +48,7 @@ class Widget extends Roots_Record {
  * You can also specify validation
  */
 roots_include('record');
-class Widget extends Roots_Record {
+class Widget extends RootsRecord {
   protected function table() {
     return 'widgets';
   }
@@ -72,7 +72,7 @@ class Widget extends Roots_Record {
  *  Best practice is to name your function find_by_<field>.  Any field should also have an index against it.
  */
 roots_include('record');
-class Widget extends Roots_Record {
+class Widget extends RootsRecord {
   protected function table() {
     return 'widgets';
   }
@@ -83,9 +83,9 @@ class Widget extends Roots_Record {
    * @param <int> $id
    * @return Widget object.
    */
-  public static function find_by_id($id) {
+  public static function findByID($id) {
     $widget = new Widget();
-    return array_pop(Roots_find::find_by_number('id', $id, $widget));
+    return array_pop(Rootsfind::findByNumber('id', $id, $widget));
   }
 
   /**
@@ -94,9 +94,9 @@ class Widget extends Roots_Record {
    * @param <string> Type
    * @return <array> Array of widget objects
    */
-  public static function find_by_type($type) {
+  public static function findByType($type) {
     $widget = new Widget();
-    return Roots_find::find_by_string('type', $type, $widget);
+    return Rootsfind::findByString('type', $type, $widget);
   }
 }
 
@@ -112,7 +112,7 @@ function saving_a_widget() {
   // This do nothing since id is always serial
   $widget->id = 123;
   // The invalid_field field doesn't exist on your table so it will do nothing.
-  $widget->invalid_field = 'foo';
+  $widget->invalidField = 'foo';
   // This saves the record to the database.
   $widget->save();
 
@@ -136,7 +136,7 @@ function loading_a_widget() {
 
   // You can also create a widget and save it to the db in one step
   // Pass in an array of your fields and the name of the class to return.
-  $widget = Roots_Record::create($fields, 'widget');
+  $widget = RootsRecord::create($fields, 'widget');
 }
 
 /**
@@ -144,11 +144,11 @@ function loading_a_widget() {
  */
 function access_a_widget() {
   // You can get an array of the field values
-  $array_of_fields = $widget->to_array();
+  $array_of_fields = $widget->toArray();
 
   // Use the static function to get a single object
-  $widget = Widget::find_by_id($id);
+  $widget = Widget::findById($id);
 
   // Get an array of the Widget objects that are of simple type.
-  $simple_widgets = Widget::find_by_type('simple');
+  $simple_widgets = Widget::findByType('simple');
 }
