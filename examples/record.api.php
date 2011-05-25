@@ -114,10 +114,10 @@ function saving_a_widget() {
   // The invalid_field field doesn't exist on your table so it will do nothing.
   $widget->invalidField = 'foo';
   // This saves the record to the database.
-  $widget->save();
-
-  // You can access any errors
-  $errors = $widget->getErrors();
+  if (!$widget->save()) {
+    // You can access any errors
+    $errors = $widget->getErrors();
+  }
 }
 
 /**

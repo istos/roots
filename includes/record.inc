@@ -172,7 +172,19 @@ abstract class RootsRecord {
     }
 
     $this->invalidate();
-    return $return;
+    return $this->saveCheck();
+  }
+
+  /**
+   * Check to see if the record was loaded
+   */
+  protected function saveCheck() {
+    if (empty($this->data['id'])) {
+      $this->errors[] = t('Record Not Saved');
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**
@@ -238,6 +250,11 @@ abstract class RootsRecord {
 }
 
 /**
+ * The Exception Class
+ */
+class RootsException extends Exception {}
+
+/**
  * Find class
  */
 
@@ -281,3 +298,4 @@ class RootsFind {
     return $return;
   }
 }
+
